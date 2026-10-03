@@ -207,11 +207,17 @@ function Format-FileSize {
 
 function Test-MatchesAnyPattern {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$Name,
+
+        [Parameter(Mandatory = $false)]
         [string[]]$Patterns
     )
-    if (-not $Patterns -or $Patterns.Count -eq 0) { return $false }
-    foreach ($pat in $Patterns) {
+    if ($null -eq $Patterns) { return $false }
+    $patternList = @($Patterns)
+    if ($patternList.Count -eq 0) { return $false }
+
+    foreach ($pat in $patternList) {
         if ([string]::IsNullOrWhiteSpace($pat)) { continue }
         if ($pat -match '[\*\?\[\]]') {
             if ($Name -like $pat -or $Name -like "*$pat*") {
@@ -227,17 +233,20 @@ function Test-MatchesAnyPattern {
 }
 
 function Normalize-ExtensionList {
-    param([string[]]$Extensions)
+    param(
+        [Parameter(Mandatory = $false)]
+        [string[]]$Extensions
+    )
     $list = [System.Collections.Generic.List[string]]::new()
-    if (-not $Extensions) { return $list }
-    foreach ($ext in $Extensions) {
+    if ($null -eq $Extensions) { return $list }
+    foreach ($ext in @($Extensions)) {
         if ([string]::IsNullOrWhiteSpace($ext)) { continue }
         $cleaned = $ext.Trim().ToLowerInvariant()
         if (-not $cleaned.StartsWith(".")) {
             $cleaned = "." + $cleaned
         }
         if (-not $list.Contains($cleaned)) {
-            $list.Add($cleaned)
+            [void]$list.Add($cleaned)
         }
     }
     return $list
@@ -245,24 +254,33 @@ function Normalize-ExtensionList {
 
 function Test-FileIncluded {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$FileName,
+
+        [Parameter(Mandatory = $false)]
         [string[]]$FInclude,
+
+        [Parameter(Mandatory = $false)]
         [string[]]$FExclude,
-        [System.Collections.Generic.List[string]]$EInclude,
-        [System.Collections.Generic.List[string]]$EExclude
+
+        [Parameter(Mandatory = $false)]
+        $EInclude,
+
+        [Parameter(Mandatory = $false)]
+        $EExclude
     )
     $ext = [System.IO.Path]::GetExtension($FileName).ToLowerInvariant()
 
-    if ($EExclude.Count -gt 0 -and $EExclude.Contains($ext)) {
+    if ($null -ne $EExclude -and $EExclude.Count -gt 0 -and $EExclude.Contains($ext)) {
         return $false
     }
-    if ($EInclude.Count -gt 0 -and (-not $EInclude.Contains($ext))) {
+    if ($null -ne $EInclude -and $EInclude.Count -gt 0 -and (-not $EInclude.Contains($ext))) {
         return $false
     }
-    if ($FExclude -and (Test-MatchesAnyPattern -Name $FileName -Patterns $FExclude)) {
+    if ($null -ne $FExclude -and (Test-MatchesAnyPattern -Name $FileName -Patterns $FExclude)) {
         return $false
     }
-    if ($FInclude -and (-not (Test-MatchesAnyPattern -Name $FileName -Patterns $FInclude))) {
+    if ($null -ne $FInclude -and @($FInclude).Count -gt 0 -and (-not (Test-MatchesAnyPattern -Name $FileName -Patterns $FInclude))) {
         return $false
     }
     return $true
@@ -270,14 +288,19 @@ function Test-FileIncluded {
 
 function Test-FolderIncluded {
     param(
+        [Parameter(Mandatory = $true)]
         [string]$FolderName,
+
+        [Parameter(Mandatory = $false)]
         [string[]]$FldInclude,
+
+        [Parameter(Mandatory = $false)]
         [string[]]$FldExclude
     )
-    if ($FldExclude -and (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldExclude)) {
+    if ($null -ne $FldExclude -and (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldExclude)) {
         return $false
     }
-    if ($FldInclude -and (-not (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldInclude))) {
+    if ($null -ne $FldInclude -and @($FldInclude).Count -gt 0 -and (-not (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldInclude))) {
         return $false
     }
     return $true
