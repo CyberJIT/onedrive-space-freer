@@ -84,7 +84,7 @@ param(
     [switch]$DryRun
 )
 
-Set-StrictMode -Version Latest
+# Set-StrictMode -Version Latest (disabled for safe null/empty array comparisons in filters)
 $ErrorActionPreference = 'Stop'
 
 # Detect operating system
@@ -213,9 +213,8 @@ function Test-MatchesAnyPattern {
         [Parameter(Mandatory = $false)]
         [string[]]$Patterns
     )
-    if ($null -eq $Patterns) { return $false }
     $patternList = @($Patterns)
-    if ($patternList.Count -eq 0) { return $false }
+    if ($patternList.Length -eq 0) { return $false }
 
     foreach ($pat in $patternList) {
         if ([string]::IsNullOrWhiteSpace($pat)) { continue }
@@ -271,16 +270,16 @@ function Test-FileIncluded {
     )
     $ext = [System.IO.Path]::GetExtension($FileName).ToLowerInvariant()
 
-    if ($null -ne $EExclude -and $EExclude.Count -gt 0 -and $EExclude.Contains($ext)) {
+    if (@($EExclude).Length -gt 0 -and (@($EExclude) -contains $ext)) {
         return $false
     }
-    if ($null -ne $EInclude -and $EInclude.Count -gt 0 -and (-not $EInclude.Contains($ext))) {
+    if (@($EInclude).Length -gt 0 -and (@($EInclude) -notcontains $ext)) {
         return $false
     }
-    if ($null -ne $FExclude -and (Test-MatchesAnyPattern -Name $FileName -Patterns $FExclude)) {
+    if (@($FExclude).Length -gt 0 -and (Test-MatchesAnyPattern -Name $FileName -Patterns $FExclude)) {
         return $false
     }
-    if ($null -ne $FInclude -and @($FInclude).Count -gt 0 -and (-not (Test-MatchesAnyPattern -Name $FileName -Patterns $FInclude))) {
+    if (@($FInclude).Length -gt 0 -and (-not (Test-MatchesAnyPattern -Name $FileName -Patterns $FInclude))) {
         return $false
     }
     return $true
@@ -297,10 +296,10 @@ function Test-FolderIncluded {
         [Parameter(Mandatory = $false)]
         [string[]]$FldExclude
     )
-    if ($null -ne $FldExclude -and (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldExclude)) {
+    if (@($FldExclude).Length -gt 0 -and (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldExclude)) {
         return $false
     }
-    if ($null -ne $FldInclude -and @($FldInclude).Count -gt 0 -and (-not (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldInclude))) {
+    if (@($FldInclude).Length -gt 0 -and (-not (Test-MatchesAnyPattern -Name $FolderName -Patterns $FldInclude))) {
         return $false
     }
     return $true
